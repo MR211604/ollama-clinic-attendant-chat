@@ -6,10 +6,10 @@ Esto es un chat con un aistente IA para una clínica de primera atención, el mo
 
 Luego de haber hecho un ```git clone```, instalas localmente las dependencias requeridas:
 ```
-pnpm install
+npm install
 ```
 
 Para posteriormente correr la aplicación usando el siguiente comando:
 ```
-pnpm run dev
+npm run dev
 ```
