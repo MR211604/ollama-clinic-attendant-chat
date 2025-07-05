@@ -1,10 +1,5 @@
 "use client";
 
-import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
-import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,12 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { motion, AnimatePresence } from "motion/react";
-
-
-interface Props {
-  onSubmit: (value: string) => void;
-}
+import { Textarea } from "@/components/ui/textarea";
+import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
+import { cn } from "@/lib/utils";
+import { ChatRequestOptions } from "ai";
+import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 
 const OLLAMA_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="294 159 1405.09 1857.06">
@@ -40,7 +36,16 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
   "llama3.1-latest": OLLAMA_SVG,
 };
 
-export default function AI_Prompt({ onSubmit }: Props) {
+interface Props {
+  handleSubmit: (event?: {
+    preventDefault?: () => void;
+  }, chatRequestOptions?: ChatRequestOptions) => void;
+  input?: string;
+  setInput?: (value: string) => void;
+  handleInputChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}
+
+export default function AI_Prompt({ handleSubmit, input, setInput, handleInputChange }: Props) {
   const [value, setValue] = useState("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 72,
@@ -48,19 +53,33 @@ export default function AI_Prompt({ onSubmit }: Props) {
   });
   const [selectedModel, setSelectedModel] = useState("llama3.1-latest");
 
-  const handleSubmit = () => {
-    if (value.trim()) {
-      setValue("");
-      adjustHeight(true);
-      onSubmit(value.trim());
-    }
-  };
+  // Usar input y setInput del hook useChat si están disponibles
+  const inputValue = input !== undefined ? input : value;
+  const setInputValue = setInput || setValue;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (inputValue.trim()) {
+        handleSubmit();
+      }
+    }
+  };
+
+  const handleSubmitClick = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (inputValue.trim()) {
       handleSubmit();
     }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (handleInputChange) {
+      handleInputChange(e);
+    } else {
+      setInputValue(e.target.value);
+    }
+    adjustHeight();
   };
 
   return (
@@ -74,7 +93,7 @@ export default function AI_Prompt({ onSubmit }: Props) {
             >
               <Textarea
                 id="ai-input-15"
-                value={value}
+                value={inputValue}
                 placeholder={"Consultar..."}
                 className={cn(
                   "w-full rounded-xl rounded-b-none px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -82,10 +101,7 @@ export default function AI_Prompt({ onSubmit }: Props) {
                 )}
                 ref={textareaRef}
                 onKeyDown={handleKeyDown}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  adjustHeight();
-                }}
+                onChange={handleTextareaChange}
               />
             </div>
 
@@ -179,16 +195,13 @@ export default function AI_Prompt({ onSubmit }: Props) {
                     "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500 cursor-pointer"
                   )}
                   aria-label="Send message"
-                  disabled={!value.trim()}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSubmit();
-                  }}
+                  disabled={!inputValue.trim()}
+                  onClick={handleSubmitClick}
                 >
                   <ArrowRight
                     className={cn(
                       "w-4 h-4 dark:text-white transition-opacity duration-200",
-                      value.trim()
+                      inputValue.trim()
                         ? "opacity-100"
                         : "opacity-30"
                     )}
